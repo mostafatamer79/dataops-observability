@@ -1,0 +1,79 @@
+name: Deploy infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type deploy to confirm infrastructure changes
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event.inputs.confirm == 'deploy'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: Get runner public IP
+        id: runner_ip
+        run: echo "ip=$(curl --fail --silent https://checkip.amazonaws.com | tr -d '\n')" >> "$GITHUB_OUTPUT"
+
+      - name: Apply Terraform
+        env:
+          TF_VAR_aws_region: ${{ vars.AWS_REGION || 'us-east-1' }}
+          TF_VAR_my_ip: ${{ steps.runner_ip.outputs.ip }}
+        run: |
+          terraform init -input=false
+          terraform apply -auto-approve -input=false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible
+        run: python -m pip install --upgrade pip ansible-core
+
+      - name: Generate Ansible inventory
+        run: |
+          cat > inventory.ini <<EOF
+          [monitoring]
+          monitoring-server ansible_host=$(terraform output -raw monitoring_server_public_ip) ansible_user=ec2-user
+
+          [workers]
+          worker-1 ansible_host=$(terraform output -raw worker_1_public_ip) ansible_user=ec2-user
+          worker-2 ansible_host=$(terraform output -raw worker_2_public_ip) ansible_user=ec2-user
+
+          [all:vars]
+          ansible_ssh_private_key_file=./dataops-key.pem
+          ansible_python_interpreter=/usr/bin/python3
+          ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+          EOF
+
+      - name: Configure services
+        env:
+          CRIBL_TOKEN: ${{ secrets.CRIBL_TOKEN }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+        run: ansible-playbook -i inventory.ini playbook.yml

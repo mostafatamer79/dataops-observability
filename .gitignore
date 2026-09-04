@@ -2,7 +2,6 @@
 *.tfstate
 *.tfstate.*
 .terraform/
-.terraform.lock.hcl
 *.tfplan
 
 # Credentials and generated inventory
