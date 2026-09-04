@@ -15,7 +15,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TERRAFORM_DIR="$SCRIPT_DIR/terraform"
+TERRAFORM_DIR="$SCRIPT_DIR"
 
 echo -e "${GREEN}=== DataOps Infrastructure Destroy Script ===${NC}"
 
@@ -39,11 +39,11 @@ echo -e "${GREEN}[2/3] Cleaning up local files...${NC}"
 cd "$SCRIPT_DIR"
 
 # Terraform cache & state
-rm -rf terraform/.terraform
-rm -f terraform/.terraform.lock.hcl
-rm -f terraform/terraform.tfstate
-rm -f terraform/terraform.tfstate.backup
-rm -f terraform/terraform.tfplan
+rm -rf .terraform
+rm -f .terraform.lock.hcl
+rm -f terraform.tfstate
+rm -f terraform.tfstate.backup
+rm -f terraform.tfplan
 
 # Ansible retry files
 rm -f playbook.retry

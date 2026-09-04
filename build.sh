@@ -17,7 +17,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TERRAFORM_DIR="$SCRIPT_DIR/terraform"
+TERRAFORM_DIR="$SCRIPT_DIR"
 INVENTORY_FILE="$SCRIPT_DIR/inventory.ini"
 SSH_KEY="$SCRIPT_DIR/dataops-key.pem"
 
