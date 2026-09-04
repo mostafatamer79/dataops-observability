@@ -1,0 +1,18 @@
+# Terraform state and local provider data
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfplan
+
+# Credentials and generated inventory
+*.pem
+*.key
+*.tfvars
+inventory.ini
+playbook.retry
+
+# Ansible Vault and local environment files
+vault.yml
+vault.yaml
+.env
